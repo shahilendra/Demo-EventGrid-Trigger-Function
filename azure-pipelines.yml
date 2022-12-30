@@ -1,0 +1,66 @@
+name: "Demo-EventGrid-Trigger-Function"
+
+resources:
+- repo: self
+
+pool:
+  vmImage: 'windows-latest'
+variables:
+  BuildPlatform: 'Any cpu'
+  BuildConfiguration: 'Release'
+
+steps:
+- task: gittools.gitversion.gitversion-task.GitVersion@4
+  displayName: Version Build
+  inputs:
+    updateAssemblyInfo: true
+    preferBundledVersion: false
+
+- task: UseDotNet@2
+  inputs:
+    version: '6.0'
+    packageType: runtime
+
+- task: VSBuild@1
+  displayName: 'Restore'
+  inputs:
+    msbuildArgs: '/t:Restore'
+    platform: '$(BuildPlatform)'
+    configuration: '$(BuildConfiguration)'
+
+- task: VSBuild@1
+  displayName: 'Build solution'
+  inputs:
+    solution: '*.sln'
+    msbuildArgs: '/p:DeployOnBuild=true /p:DeployDefaultTarget=WebPublish /p:WebPublishMethod=FileSystem /p:publishUrl="$(Agent.TempDirectory)\WebAppContent\\"'
+    platform: '$(BuildPlatform)'
+    configuration: '$(BuildConfiguration)'
+
+- task: ArchiveFiles@2
+  displayName: 'Archive Files'
+  inputs:
+    rootFolderOrFile: '$(Agent.TempDirectory)\WebAppContent'
+    archiveFile: '$(Build.ArtifactStagingDirectory)/Demo-EventGrid-Trigger-Function-$(Build.BuildNumber).zip'
+    includeRootFolder: false
+
+- task: VSTest@2
+  displayName: 'Test Assemblies'
+  inputs:
+    testAssemblyVer2: |
+     **\$(BuildConfiguration)\*Tests*.dll
+     !**\obj\**
+    platform: '$(BuildPlatform)'
+    configuration: '$(BuildConfiguration)'
+
+- task: PublishSymbols@2
+  displayName: 'Publish symbols path'
+  inputs:
+    SearchPattern: '**\bin\**\*.pdb'
+    PublishSymbols: false
+  continueOnError: true
+
+- task: PublishBuildArtifacts@1
+  displayName: 'Publish Artifact'
+  inputs:
+    PathtoPublish: '$(build.artifactstagingdirectory)'
+    ArtifactName: 'drop'

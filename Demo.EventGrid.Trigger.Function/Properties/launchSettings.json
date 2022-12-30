@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Demo.EventGrid.Trigger.Function": {
+      "commandName": "Project",
+      "commandLineArgs": "--port 7256"
+    },
+    "Docker": {
+      "commandName": "Docker",
+      "launchUrl": "{Scheme}://{ServiceHost}:{ServicePort}",
+      "httpPort": 30835,
+      "useSSL": false
+    }
+  }
+}
